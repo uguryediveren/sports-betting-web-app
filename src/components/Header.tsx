@@ -4,7 +4,6 @@ import { signIn, signOut, useAuth } from '../contexts/auth-provider';
 import { useMobile } from '../hooks/use-mobile';
 import { useToast } from '../hooks/use-toast';
 import { MobileMenu } from './MobileMenu';
-import { Search } from './Search';
 import { ThemeToggle } from './ThemeToggle';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
@@ -35,7 +34,7 @@ export function Header() {
 
   return (
     <header className='sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
-      <div className='container flex h-16 items-center justify-center mx-auto'>
+      <div className='container flex h-16 items-center justify-between mx-auto'>
         <div className='flex items-center gap-2'>
           {isMobile && <MobileMenu />}
           <Link to='/' className='flex items-center gap-2'>
@@ -44,9 +43,9 @@ export function Header() {
           </Link>
         </div>
 
-        <div className='hidden md:flex flex-1 mx-6'>
+        {/* <div className='hidden md:flex flex-1 mx-6'>
           <Search />
-        </div>
+        </div> */}
 
         <div className='flex items-center gap-4'>
           <ThemeToggle />

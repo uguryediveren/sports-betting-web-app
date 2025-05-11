@@ -1,5 +1,6 @@
 'use client';
 
+import { addToBet } from '@/redux/betSlice';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Calendar, ChevronDown, ChevronUp, Clock, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
@@ -7,8 +8,7 @@ import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { logAnalyticsEvent } from '../lib/firebase';
 import { formatDate, formatTime } from '../lib/utils';
-import { addToBet } from '../redux/betSlice';
-import type { Event, Odd } from '../types/events';
+import type { Event } from '../types/events';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -21,22 +21,22 @@ export function EventCard({ event }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const dispatch = useDispatch();
 
-  const handleAddToBet = (odd: Odd) => {
+  const handleAddToBet = (event: Event, index: number) => {
+    const selectedOutcome = event.bookmakers[0].markets[0].outcomes[index];
     dispatch(
       addToBet({
         eventId: event.id,
         eventName: `${event.home_team} vs ${event.away_team}`,
-        selection: odd.name,
-        odds: odd.value,
-        type: odd.type,
+        selection: selectedOutcome.name,
+        odds: selectedOutcome.price,
       }),
     );
 
     logAnalyticsEvent('add_to_cart', {
       event_id: event.id,
       event_name: `${event.home_team} vs ${event.away_team}`,
-      selection: odd.name,
-      odds: odd.value,
+      selection: selectedOutcome.name,
+      odds: selectedOutcome.price,
     });
   };
 
@@ -57,7 +57,7 @@ export function EventCard({ event }: EventCardProps) {
         <div className='flex justify-between items-start'>
           <div>
             <Badge variant='outline' className='mb-2'>
-              {event.league.name}
+              {event.sport_title}
             </Badge>
             <CardTitle className='text-lg'>
               {event.home_team} vs {event.away_team}
@@ -88,15 +88,15 @@ export function EventCard({ event }: EventCardProps) {
         </div>
 
         <div className='grid grid-cols-3 gap-2'>
-          {event.odds.slice(0, 3).map((odd) => (
+          {event.bookmakers[0].markets[0].outcomes.slice(0, 3).map((odd, index) => (
             <Button
-              key={odd.id}
+              key={event.bookmakers[0].markets[0].outcomes.indexOf(odd)}
               variant='outline'
               className='flex flex-col h-auto py-2'
-              onClick={() => handleAddToBet(odd)}
+              onClick={() => handleAddToBet(event, index)}
             >
               <span className='text-xs text-muted-foreground'>{odd.name}</span>
-              <span className='font-bold'>{odd.value.toFixed(2)}</span>
+              <span className='font-bold'>{odd.price.toFixed(2)}</span>
             </Button>
           ))}
         </div>
@@ -112,7 +112,7 @@ export function EventCard({ event }: EventCardProps) {
             >
               <div className='mt-4 pt-4 border-t'>
                 <h4 className='font-medium mb-2'>Tüm Oranlar</h4>
-                <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
+                {/* <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
                   {event.odds.map((odd) => (
                     <Button
                       key={odd.id}
@@ -124,7 +124,7 @@ export function EventCard({ event }: EventCardProps) {
                       <span className='font-bold'>{odd.value.toFixed(2)}</span>
                     </Button>
                   ))}
-                </div>
+                </div> */}
                 <div className='mt-4 text-center'>
                   <Button asChild variant='link'>
                     <Link to={`/events/${event.id}`}>

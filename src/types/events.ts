@@ -1,22 +1,35 @@
-export interface League {
-  id: string;
+export interface Outcome {
   name: string;
-  country: string;
+  price: number;
 }
 
-export interface Odd {
-  id: string;
-  name: string;
-  value: number;
-  type: string;
+export interface Market {
+  key: string;
+  last_update: string;
+  outcomes: Outcome[];
+}
+
+export interface Bookmaker {
+  key: string;
+  title: string;
+  last_update: string;
+  markets: Market[];
 }
 
 export interface Event {
   id: string;
   sport_key: string;
+  sport_title: string;
+  commence_time: string;
   home_team: string;
   away_team: string;
-  commence_time: string;
-  league: League;
-  odds: Odd[];
+  bookmakers: Bookmaker[];
 }
+
+// export interface Sport {
+//   key: string;
+//   group: string;
+//   title: string;
+//   active: boolean;
+//   has_outrights: boolean;
+// }

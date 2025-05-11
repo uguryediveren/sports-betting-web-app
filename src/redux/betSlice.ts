@@ -7,7 +7,7 @@ interface BetSelection {
   eventName: string;
   selection: string;
   odds: number;
-  type: string;
+  // type: string;
 }
 
 interface BetState {
@@ -32,8 +32,11 @@ const betSlice = createSlice({
     addToBet: (state, action: PayloadAction<Omit<BetSelection, 'id'>>) => {
       // Check if selection from same event already exists
       const existingSelectionIndex = state.selections.findIndex(
-        (s) => s.eventId === action.payload.eventId && s.type === action.payload.type,
+        // (s) => s.eventId === action.payload.eventId && s.type === action.payload.type,
+        (s) => s.eventId === action.payload.eventId,
       );
+
+      console.log('existingSelectionIndex', existingSelectionIndex);
 
       if (existingSelectionIndex !== -1) {
         // Replace the existing selection
