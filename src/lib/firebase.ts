@@ -1,7 +1,7 @@
 import { getAnalytics, isSupported, logEvent } from 'firebase/analytics';
 import { getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 
-let firebaseApp: FirebaseApp | undefined;
+export let firebaseApp: FirebaseApp | undefined;
 let isFirebaseInitialized = false;
 
 export function initializeFirebase() {

@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchFootball } from '../redux/eventsSlice';
+import { fetchBasketball, fetchFootball, fetchTennis, fetchVolleyball } from '../redux/eventsSlice';
 import type { AppDispatch, RootState } from '../redux/store';
 import { EventCard } from './EventCard';
 import { Button } from './ui/button';
@@ -11,94 +11,57 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 export function BetBulletin() {
   const dispatch = useDispatch<AppDispatch>();
-  const {
-    events,
-    footballStatus,
-    error,
-    isBasketballFetched,
-    isTennisFetched,
-    isVolleyballFetched,
-  } = useSelector((state: RootState) => state.events);
+  const { events, footballStatus, error, basketballStatus, tennisStatus, volleyballStatus } =
+    useSelector((state: RootState) => state.events);
   const sports = useSelector((state: RootState) => state.sports.sports);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('Soccer');
 
-  const activeSport = sports
+  const activeSportKeys = sports
     .filter((sport: any) => sport.group === activeTab)
     .slice(0, 28)
     .map((sport: any) => sport.key);
-  console.log('activeSport', activeSport);
-
-  // useEffect(() => {
-  //   if (status !== 'idle') return;
-
-  //   if (activeTab === 'soccer') {
-  //     dispatch(fetchFootball());
-  //   }
-  //   if (!isBasketballFetched && activeTab === 'basketball') {
-  //     console.log('Basketbol fetch ediliyor');
-
-  //     dispatch(fetchBasketball());
-  //   }
-  //   if (!isTennisFetched && activeTab === 'tennis') {
-  //     console.log('Tenis fetch ediliyor');
-  //     dispatch(fetchTennis());
-  //   }
-  //   if (!isVolleyballFetched && activeTab === 'volleyball') {
-  //     console.log('Voleybol fetch ediliyor');
-  //     dispatch(fetchVolleyball());
-  //   }
-  // }, [status, dispatch, activeTab, isBasketballFetched, isTennisFetched, isVolleyballFetched]);
 
   useEffect(() => {
+    if (activeSportKeys.length === 0) {
+      return;
+    }
+
     switch (activeTab) {
       case 'Soccer':
         if (footballStatus === 'idle') {
-          console.log('girdiiii', activeSport);
-
-          dispatch(fetchFootball(activeSport));
+          dispatch(fetchFootball(activeSportKeys));
         }
         break;
-      // case 'Basketball':
-      //   if (!isBasketballFetched) {
-      //     console.log('Basketbol fetch ediliyor');
-      //     dispatch(fetchBasketball());
-      //   }
-      //   break;
-      // case 'Tennis':
-      //   if (!isTennisFetched) {
-      //     console.log('Tenis fetch ediliyor');
-      //     dispatch(fetchTennis());
-      //   }
-      //   break;
-      // case 'Volleyball':
-      //   if (!isVolleyballFetched) {
-      //     console.log('Voleybol fetch ediliyor');
-      //     dispatch(fetchVolleyball());
-      //   }
-      //   break;
-      // default:
-      //   break;
+      case 'Basketball':
+        if (basketballStatus === 'idle') {
+          dispatch(fetchBasketball(activeSportKeys));
+        }
+        break;
+      case 'Tennis':
+        if (tennisStatus === 'idle') {
+          dispatch(fetchTennis(activeSportKeys));
+        }
+        break;
+      case 'Volleyball':
+        if (volleyballStatus === 'idle') {
+          dispatch(fetchVolleyball(activeSportKeys));
+        }
+        break;
+      default:
+        break;
     }
-  }, [
-    activeTab,
-    dispatch,
-    isBasketballFetched,
-    isTennisFetched,
-    isVolleyballFetched,
-    footballStatus,
-    activeSport,
-  ]);
+  }, [activeTab, dispatch, footballStatus, basketballStatus, tennisStatus, activeSportKeys]);
 
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
-      event.home_team.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.away_team.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.sport_title.toLowerCase().includes(searchTerm.toLowerCase());
+      (event.home_team && event.home_team.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (event.away_team && event.away_team.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (event.sport_title && event.sport_title.toLowerCase().includes(searchTerm.toLowerCase()));
 
     // if (activeTab === 'all') return matchesSearch;
-    return matchesSearch;
+    return activeSportKeys.includes(event.sport_key) && matchesSearch;
   });
 
   const container = {
@@ -124,9 +87,6 @@ export function BetBulletin() {
     return <div className='flex justify-center p-8 text-red-500'>Hata: {error}</div>;
   }
 
-  console.log('filteredEvents', filteredEvents);
-  console.log('activeTab', activeTab);
-
   return (
     <div className='space-y-4'>
       <div className='flex flex-col sm:flex-row gap-4 items-center'>
@@ -147,7 +107,6 @@ export function BetBulletin() {
 
       <Tabs defaultValue='Soccer' onValueChange={setActiveTab}>
         <TabsList className='grid grid-cols-4 mb-2'>
-          {/* <TabsTrigger value='all'>Tümü</TabsTrigger> */}
           <TabsTrigger value='Soccer'>Futbol</TabsTrigger>
           <TabsTrigger value='Basketball'>Basketbol</TabsTrigger>
           <TabsTrigger value='Volleyball'>Voleybol</TabsTrigger>

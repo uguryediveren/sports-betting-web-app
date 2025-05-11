@@ -7,8 +7,6 @@ import { SideCart } from '../components/SideCart';
 export default function HomePage() {
   const status = useSelector((state: RootState) => state.sports.status);
 
-  console.log('lkıasıjdlajlksdkljas', status);
-
   return (
     <main className='min-h-screen bg-background'>
       <Header />

@@ -1,58 +1,92 @@
 'use client';
 
-import { addToBet } from '@/redux/betSlice';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Calendar, ChevronDown, ChevronUp, Clock, ExternalLink } from 'lucide-react';
-import { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/auth-provider';
+import { getOdds2 } from '@/lib/api';
+import { saveBetToFirebase } from '@/redux/betSlice';
+import { Calendar, Clock } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { logAnalyticsEvent } from '../lib/firebase';
-import { formatDate, formatTime } from '../lib/utils';
+import { cn, formatDate, formatTime } from '../lib/utils';
 import type { Event } from '../types/events';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { toast } from './ui/use-toast';
 
 interface EventCardProps {
   event: Event;
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const [expanded, setExpanded] = useState(false);
+  const { user } = useAuth();
   const dispatch = useDispatch();
+  const ref = useRef<HTMLElement>(null);
+  const [odds, setOdds] = useState({});
+  const [oddsStatus, setOddsStatus] = useState('idle');
+  const selections = useSelector((state: any) => state.bet.selections);
 
-  const handleAddToBet = (event: Event, index: number) => {
-    const selectedOutcome = event.bookmakers[0].markets[0].outcomes[index];
-    dispatch(
-      addToBet({
-        eventId: event.id,
-        eventName: `${event.home_team} vs ${event.away_team}`,
-        selection: selectedOutcome.name,
-        odds: selectedOutcome.price,
-      }),
-    );
+  useEffect(() => {
+    if (!ref.current) {
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(async (entry) => {
+        if (entry.isIntersecting) {
+          if (oddsStatus === 'idle') {
+            setOddsStatus('loading');
+
+            try {
+              const res = await getOdds2(event.sport_key, event.id);
+              setOdds(res);
+              setOddsStatus('loaded');
+            } catch (err) {
+              console.log(err);
+              setOddsStatus('error');
+            }
+          }
+        }
+      });
+    });
+
+    observer.observe(ref.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [oddsStatus, setOddsStatus, event.sport_key, event.id]);
+
+  const handleAddToBet = (odd: { name: string; price: number }) => {
+    console.log('Adding to bet:', odd);
+    if (!user) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please sign in to add a selection',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const bet = {
+      eventId: event.id,
+      eventName: `${event.home_team} vs ${event.away_team}`,
+      selection: odd.name,
+      odds: odd.price,
+    };
+
+    dispatch(saveBetToFirebase({ userId: user?.uid, bet }));
 
     logAnalyticsEvent('add_to_cart', {
       event_id: event.id,
       event_name: `${event.home_team} vs ${event.away_team}`,
-      selection: selectedOutcome.name,
-      odds: selectedOutcome.price,
+      selection: odd.name,
+      odds: odd.price,
     });
   };
 
-  const handleViewDetails = () => {
-    setExpanded(!expanded);
-
-    if (!expanded) {
-      logAnalyticsEvent('match_detail_view', {
-        event_id: event.id,
-        event_name: `${event.home_team} vs ${event.away_team}`,
-      });
-    }
-  };
-
   return (
-    <Card>
+    <Card ref={ref}>
       <CardHeader className='pb-2'>
         <div className='flex justify-between items-start'>
           <div>
@@ -62,16 +96,6 @@ export function EventCard({ event }: EventCardProps) {
             <CardTitle className='text-lg'>
               {event.home_team} vs {event.away_team}
             </CardTitle>
-          </div>
-          <div className='flex gap-2'>
-            <Button variant='ghost' size='sm' asChild>
-              <Link to={`/events/${event.id}`}>
-                <ExternalLink size={16} />
-              </Link>
-            </Button>
-            <Button variant='ghost' size='sm' onClick={handleViewDetails}>
-              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </Button>
           </div>
         </div>
       </CardHeader>
@@ -87,55 +111,31 @@ export function EventCard({ event }: EventCardProps) {
           </div>
         </div>
 
-        <div className='grid grid-cols-3 gap-2'>
-          {event.bookmakers[0].markets[0].outcomes.slice(0, 3).map((odd, index) => (
-            <Button
-              key={event.bookmakers[0].markets[0].outcomes.indexOf(odd)}
-              variant='outline'
-              className='flex flex-col h-auto py-2'
-              onClick={() => handleAddToBet(event, index)}
-            >
-              <span className='text-xs text-muted-foreground'>{odd.name}</span>
-              <span className='font-bold'>{odd.price.toFixed(2)}</span>
-            </Button>
-          ))}
-        </div>
+        {oddsStatus === 'loading' && 'Loading'}
+        {oddsStatus === 'error' && 'Error'}
 
-        <AnimatePresence>
-          {expanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className='overflow-hidden'
-            >
-              <div className='mt-4 pt-4 border-t'>
-                <h4 className='font-medium mb-2'>Tüm Oranlar</h4>
-                {/* <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
-                  {event.odds.map((odd) => (
-                    <Button
-                      key={odd.id}
-                      variant='outline'
-                      className='flex flex-col h-auto py-2'
-                      onClick={() => handleAddToBet(odd)}
-                    >
-                      <span className='text-xs text-muted-foreground'>{odd.name}</span>
-                      <span className='font-bold'>{odd.value.toFixed(2)}</span>
-                    </Button>
-                  ))}
-                </div> */}
-                <div className='mt-4 text-center'>
-                  <Button asChild variant='link'>
-                    <Link to={`/events/${event.id}`}>
-                      Tüm Bahis Seçeneklerini Gör <ExternalLink className='ml-1 h-3 w-3' />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {oddsStatus === 'loaded' && (
+          <div className='grid grid-cols-3 gap-2'>
+            {/* <pre>{JSON.stringify(odds, null, 4)}</pre> */}
+            {odds.bookmakers.length > 0 &&
+              odds.bookmakers[0].markets[0].outcomes.slice(0, 3).map((odd) => (
+                <Button
+                  key={odds.bookmakers[0].markets[0].outcomes.indexOf(odd)}
+                  variant='outline'
+                  className={cn('flex flex-col h-auto py-2', {
+                    'bg-primary text-white hover:bg-primary hover:text-white': selections.some(
+                      (selection: any) =>
+                        selection.eventId === event.id && selection.selection === odd.name,
+                    ),
+                  })}
+                  onClick={() => handleAddToBet(odd)}
+                >
+                  <span className='text-xs'>{odd.name}</span>
+                  <span className='font-bold'>{odd.price.toFixed(2)}</span>
+                </Button>
+              ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

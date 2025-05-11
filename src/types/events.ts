@@ -25,11 +25,3 @@ export interface Event {
   away_team: string;
   bookmakers: Bookmaker[];
 }
-
-// export interface Sport {
-//   key: string;
-//   group: string;
-//   title: string;
-//   active: boolean;
-//   has_outrights: boolean;
-// }

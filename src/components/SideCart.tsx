@@ -1,28 +1,43 @@
-'use client';
-
 import { AnimatePresence, motion } from 'framer-motion';
 import { Trash2, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAuth } from '../contexts/auth-provider';
 import { useToast } from '../hooks/use-toast';
 import { logAnalyticsEvent } from '../lib/firebase';
-import { clearBet, removeFromBet } from '../redux/betSlice';
+import { clearBets, placeBet, removeFromBet } from '../redux/betSlice';
 import type { RootState } from '../redux/store';
 import { Button } from './ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
+import { use } from 'react';
 
 export function SideCart() {
   const { selections, totalOdds } = useSelector((state: RootState) => state.bet);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<typeof import('../redux/store').store.dispatch>();
   const { toast } = useToast();
   const { user, isAuthAvailable } = useAuth();
 
-  const handleRemoveSelection = (id: string) => {
-    dispatch(removeFromBet(id));
+  const handleRemoveSelection = (eventId: string) => {
+    if (!user && isAuthAvailable) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please sign in to remove a selection',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (user) {
+      dispatch(
+        removeFromBet({
+          userId: user?.uid,
+          eventId,
+        }),
+      );
+    }
 
     logAnalyticsEvent('remove_from_cart', {
-      selection_id: id,
+      selection_id: eventId,
     });
   };
 
@@ -45,10 +60,9 @@ export function SideCart() {
       return;
     }
 
-    toast({
-      title: 'Bet placed successfully!',
-      description: `Total stake: $10.00, Potential win: $${(10 * totalOdds).toFixed(2)}`,
-    });
+    if (user) {
+      dispatch(placeBet(user.uid));
+    }
 
     logAnalyticsEvent('place_bet', {
       selections_count: selections.length,
@@ -56,8 +70,21 @@ export function SideCart() {
       stake: 10,
       potential_win: 10 * totalOdds,
     });
+  };
 
-    dispatch(clearBet());
+  const handleClearBet = () => {
+    if (!user && isAuthAvailable) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please sign in to clear your bet slip',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (user) {
+      dispatch(clearBets(user.uid));
+    }
   };
 
   return (
@@ -91,7 +118,7 @@ export function SideCart() {
                           variant='ghost'
                           size='icon'
                           className='h-6 w-6'
-                          onClick={() => handleRemoveSelection(selection.id)}
+                          onClick={() => handleRemoveSelection(selection.eventId)}
                         >
                           <X className='h-4 w-4' />
                         </Button>
@@ -129,7 +156,7 @@ export function SideCart() {
           Place Bet {!isAuthAvailable && '(Demo)'}
         </Button>
         {selections.length > 0 && (
-          <Button variant='outline' className='w-full' onClick={() => dispatch(clearBet())}>
+          <Button variant='outline' className='w-full' onClick={handleClearBet}>
             <Trash2 className='mr-2 h-4 w-4' /> Clear Slip
           </Button>
         )}

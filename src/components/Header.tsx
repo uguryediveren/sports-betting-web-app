@@ -13,11 +13,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { clearAll } from '@/redux/betSlice';
+import { useDispatch } from 'react-redux';
 
 export function Header() {
   const { user, isAuthAvailable } = useAuth();
   const isMobile = useMobile();
   const { toast } = useToast();
+  const dispatch = useDispatch();
 
   const handleSignIn = async () => {
     if (!isAuthAvailable) {
@@ -67,7 +70,15 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link to='/profile?tab=history'>Bahislerim</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => signOut()}>Çıkış Yap</DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    signOut().then(() => {
+                      dispatch(clearAll());
+                    })
+                  }
+                >
+                  Çıkış Yap
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (

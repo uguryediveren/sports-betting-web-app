@@ -28,35 +28,54 @@ const initialState: EventsState = {
   volleyballStatus: 'idle',
 };
 
-export const fetchFootball = createAsyncThunk('events/fetchFootball', async (keys: string[]) => {
-  console.log('futbolu çektimmmmmm');
+export const fetchFootball = createAsyncThunk(
+  'events/fetchEventBySportKeys',
+  async (keys: string[]) => {
+    console.log('futbolu çektimmmmmm');
 
+    const response = await getAllFootballOdds(keys);
+    return response;
+  },
+);
+
+export const fetchBasketball = createAsyncThunk(
+  'events/fetchBasketball',
+  async (keys: string[]) => {
+    console.log('basketbolu çektimmmmmm');
+    const response = await getAllFootballOdds(keys);
+    return response;
+    // const response = await getAllBasketballOdds();
+    // return response;
+  },
+);
+
+export const fetchTennis = createAsyncThunk('events/fetchTennis', async (keys: string[]) => {
+  console.log('tenisi çektimmmmmm');
   const response = await getAllFootballOdds(keys);
   return response;
-});
-
-export const fetchBasketball = createAsyncThunk('events/fetchBasketball', async () => {
-  console.log('basketbolu çektimmmmmm');
-  // const response = await getAllBasketballOdds();
-  // return response;
-});
-
-export const fetchTennis = createAsyncThunk('events/fetchTennis', async () => {
-  console.log('tenisi çektimmmmmm');
   // const response = await getAllTennisOdds();
   // return response;
 });
 
-export const fetchVolleyball = createAsyncThunk('events/fetchVolleyball', async () => {
-  console.log('voleybolu çektimmmmmm');
-  // const response = await getAllVolleyballOdds();
-  // return response;
-});
+export const fetchVolleyball = createAsyncThunk(
+  'events/fetchVolleyball',
+  async (keys: string[]) => {
+    console.log('voleybolu çektimmmmmm');
+    // const response = await getAllVolleyballOdds();
+    // return response;
+    const response = await getAllFootballOdds(keys);
+    return response;
+  },
+);
 
 const eventsSlice = createSlice({
   name: 'events',
   initialState,
-  reducers: {},
+  reducers: {
+    setLoading(state, action) {
+      state.footballStatus = action.payload;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchFootball.pending, (state) => {
@@ -64,7 +83,7 @@ const eventsSlice = createSlice({
       })
       .addCase(fetchFootball.fulfilled, (state, action) => {
         state.footballStatus = 'succeeded';
-        state.events = action.payload;
+        state.events.push(...action.payload);
         // state.isFootballFetched = true;
         console.log('jeyyyyyyyyyyyyyy', action.payload);
       })
@@ -72,6 +91,7 @@ const eventsSlice = createSlice({
         state.footballStatus = 'failed';
         state.error = action.error.message || 'Failed to fetch events';
       });
+
     builder
       .addCase(fetchBasketball.pending, (state) => {
         state.basketballStatus = 'loading';
@@ -80,6 +100,7 @@ const eventsSlice = createSlice({
         state.basketballStatus = 'succeeded';
         // state.events = action.payload;
         state.isBasketballFetched = true;
+        state.events.push(...action.payload);
         console.log('basketbol jeyyyyyyyyyyyyyy', action.payload);
       })
       .addCase(fetchBasketball.rejected, (state, action) => {
@@ -93,6 +114,7 @@ const eventsSlice = createSlice({
       .addCase(fetchTennis.fulfilled, (state, action) => {
         state.tennisStatus = 'succeeded';
         // state.events = action.payload;
+        state.events.push(...action.payload);
         state.isTennisFetched = true;
         console.log('tenis jeyyyyyyyyyyyyyy', action.payload);
       })
@@ -107,6 +129,7 @@ const eventsSlice = createSlice({
       .addCase(fetchVolleyball.fulfilled, (state, action) => {
         state.volleyballStatus = 'succeeded';
         // state.events = action.payload;
+        state.events.push(...action.payload);
         state.isVolleyballFetched = true;
         console.log('voleybol jeyyyyyyyyyyyyyy', action.payload);
       })
